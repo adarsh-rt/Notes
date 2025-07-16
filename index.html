@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProNotes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- Professional Theme Palettes --- */
+        :root {
+            /* Dark Theme (Slate/Indigo) */
+            --primary-bg: #111827;      /* Very Dark Blue/Gray */
+            --secondary-bg: #1f2937;    /* Dark Blue/Gray */
+            --card-bg: #374151;         /* Medium Slate Gray */
+            --text-primary: #e5e7eb;     /* Light Gray (Off-white) */
+            --text-secondary: #9ca3af;   /* Muted Gray */
+            --accent-color: #6366f1;     /* Indigo */
+            --border-color: #4b5563;     /* Darker Slate Gray */
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            
+            /* Note Category Colors */
+            --color-c1: #ef4444; /* red */
+            --color-c2: #f97316; /* orange */
+            --color-c3: #f59e0b; /* amber */
+            --color-c4: #10b981; /* teal */
+            --color-c5: #3b82f6; /* blue */
+        }
+
+        .light-theme {
+            /* Light Theme (Clean/Minimal) */
+            --primary-bg: #f9fafb;      /* Almost White Gray */
+            --secondary-bg: #ffffff;    /* White */
+            --card-bg: #ffffff;         /* White */
+            --text-primary: #111827;     /* Dark Blue/Gray (from dark theme) */
+            --text-secondary: #6b7280;   /* Medium Gray */
+            --accent-color: #6366f1;     /* Indigo */
+            --border-color: #e5e7eb;     /* Light Gray */
+            --shadow-color: rgba(99, 102, 241, 0.1); /* Subtle Accent Shadow */
+        }
+
+        /* --- General & Typography --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--secondary-bg);
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+            position: relative;
+            padding-bottom: 90px; /* Space for FAB */
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        #header-title { display: block; }
+        #search-bar { display: none; width: 100%; }
+        #search-bar input {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        #search-bar input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        .header-icons { display: flex; gap: 1.25rem; }
+        .header-icons i { font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); transition: color 0.2s; }
+        .header-icons i:hover { color: var(--accent-color); }
+
+        /* --- Settings Menu --- */
+        #settings-menu {
+            display: none;
+            position: absolute;
+            top: 65px;
+            right: 1rem;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 8px 25px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            z-index: 100;
+            overflow: hidden;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #settings-menu ul { list-style: none; }
+        #settings-menu li {
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            white-space: nowrap;
+            font-size: 0.95rem;
+        }
+        #settings-menu li:hover { background-color: var(--accent-color); color: white; }
+        #settings-menu li:not(:last-child) { border-bottom: 1px solid var(--border-color); }
+
+        /* --- Notes Grid & Cards --- */
+        #notes-grid {
+            padding: 1.25rem;
+            display: grid;
+            gap: 1.25rem;
+        }
+        #notes-grid.grid-view { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        #notes-grid.list-view { grid-template-columns: 1fr; }
+
+        .note-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid var(--border-color);
+            border-top: 4px solid transparent;
+            box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .note-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
+        }
+        
+        .note-card.color-c1 { border-top-color: var(--color-c1); }
+        .note-card.color-c2 { border-top-color: var(--color-c2); }
+        .note-card.color-c3 { border-top-color: var(--color-c3); }
+        .note-card.color-c4 { border-top-color: var(--color-c4); }
+        .note-card.color-c5 { border-top-color: var(--color-c5); }
+
+        .note-title { 
+            font-weight: 600; 
+            margin-bottom: 0.5rem; 
+            color: var(--text-primary);
+        }
+        .note-content-preview {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+        .note-card.list-view .note-content-preview { -webkit-line-clamp: 2; }
+
+        .note-card.locked .note-content-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+        }
+
+        /* --- FAB --- */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: calc((100% - 600px)/2 + 2rem);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-color), #8183f5);
+            color: white;
+            border-radius: 50%;
+            border: none;
+            font-size: 2.2rem;
+            font-weight: 300;
+            line-height: 60px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            user-select: none;
+            z-index: 20;
+        }
+        .fab:hover { 
+            transform: scale(1.08) rotate(90deg);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+        }
+        @media (max-width: 600px) {
+            .fab { right: 1.5rem; bottom: 1.5rem; }
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal {
+            max-width: 600px;
+            width: 100%;
+            height: 100%;
+            background-color: var(--secondary-bg);
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Edit/Add Modal */
+        #edit-modal .modal-content { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;}
+        #edit-modal input, #edit-modal textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 0.5rem 0;
+        }
+        #note-title-input { 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            border-bottom: 2px solid var(--border-color); 
+            transition: border-color 0.2s;
+        }
+        #note-content-input { 
+            flex-grow: 1; 
+            font-size: 1.1rem; 
+            line-height: 1.6;
+            resize: none; 
+            margin-top: 1.5rem; 
+        }
+        #note-title-input:focus, #note-content-input:focus { 
+            outline: none; 
+            border-bottom-color: var(--accent-color);
+        }
+        #note-content-input:focus { border-bottom: none; }
+
+        .color-palette { display: flex; gap: 1rem; margin-top: 1rem; justify-content: center; padding: 1rem 0; }
+        .color-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .color-dot:hover { transform: scale(1.15); }
+        .color-dot.selected { 
+            border-color: var(--accent-color); 
+            transform: scale(1.2);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+        .color-dot.c1 { background-color: var(--color-c1); }
+        .color-dot.c2 { background-color: var(--color-c2); }
+        .color-dot.c3 { background-color: var(--color-c3); }
+        .color-dot.c4 { background-color: var(--color-c4); }
+        .color-dot.c5 { background-color: var(--color-c5); }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--primary-bg);
+        }
+        .modal-actions button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .modal-actions button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #save-note-btn { background-color: var(--accent-color); color: white; }
+        #delete-note-btn { background-color: #4b5563; color: var(--text-primary); }
+        #delete-note-btn:hover { background-color: var(--color-c1); color: white; }
+
+        /* --- View Modal --- */
+        #view-modal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #view-modal-actions { display: flex; gap: 1.8rem; }
+        #view-modal-actions i { font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); transition: color 0.2s, transform 0.2s;}
+        #view-modal-actions i:hover { color: var(--accent-color); transform: scale(1.2); }
+        #view-back-btn { font-size: 1.5rem; }
+
+        #view-modal .modal-content {
+            padding: 1.5rem 2rem;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        #view-note-title { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            margin-bottom: 1.5rem; 
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+        #view-note-content { 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        /* --- Tutorial Styles --- */
+        .tutorial-highlight {
+            position: relative;
+            z-index: 1000;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 15px 5px var(--accent-color);
+            border-radius: 12px;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        #tutorial-tooltip {
+            position: fixed;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            z-index: 1001;
+            max-width: 300px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <h1 id="header-title">ProNotes</h1>
+            <div id="search-bar">
+                <input type="search" id="search-input" placeholder="Search notes...">
+            </div>
+            <div class="header-icons">
+                <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
+                <i class="fa-solid fa-grip" id="view-toggle-icon"></i>
+                <i class="fa-solid fa-ellipsis-v" id="settings-icon"></i>
+            </div>
+        </header>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu">
+            <ul>
+                <li id="toggle-theme-btn">Toggle Theme</li>
+                <li id="sort-btn">Sort by: Date</li>
+                <li id="set-password-btn">Set Master Password</li>
+                <li id="backup-btn">Backup Notes</li>
+                <li id="restore-btn">Restore Notes</li>
+                <li id="delete-all-btn">Delete All Notes</li>
+            </ul>
+        </div>
+
+        <!-- Notes Grid -->
+        <main id="notes-grid" class="grid-view"></main>
+
+        <!-- Floating Action Button -->
+        <button class="fab" id="add-note-fab">+</button>
+    </div>
+
+    <!-- Edit/Add Note Modal -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-content">
+                <input type="text" id="note-title-input" placeholder="Title">
+                <textarea id="note-content-input" placeholder="Take a note..."></textarea>
+                <div class="color-palette" id="color-palette">
+                    <span class="color-dot c1" data-color="c1"></span>
+                    <span class="color-dot c2" data-color="c2"></span>
+                    <span class="color-dot c3" data-color="c3"></span>
+                    <span class="color-dot c4" data-color="c4"></span>
+                    <span class="color-dot c5" data-color="c5"></span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="delete-note-btn">Delete</button>
+                <button id="save-note-btn">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Note Modal -->
+    <div id="view-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <i class="fa-solid fa-arrow-left" id="view-back-btn"></i>
+                <div id="view-modal-actions">
+                    <i class="fa-brands fa-whatsapp" id="share-btn"></i>
+                    <i class="fa-solid fa-copy" id="copy-btn"></i>
+                    <i class="fa-solid fa-pencil" id="edit-btn"></i>
+                    <i class="fa-solid fa-lock" id="lock-btn"></i>
+                </div>
+            </div>
+            <div class="modal-content">
+                <h2 id="view-note-title"></h2>
+                <p id="view-note-content"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Tooltip -->
+    <div id="tutorial-tooltip"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENTS ---
+        const body = document.body;
+        const notesGrid = document.getElementById('notes-grid');
+        const searchInput = document.getElementById('search-input');
+        const settingsMenu = document.getElementById('settings-menu');
+
+        // Modals
+        const editModal = document.getElementById('edit-modal');
+        const viewModal = document.getElementById('view-modal');
+        const noteTitleInput = document.getElementById('note-title-input');
+        const noteContentInput = document.getElementById('note-content-input');
+        const colorPalette = document.getElementById('color-palette');
+        const viewNoteTitle = document.getElementById('view-note-title');
+        const viewNoteContent = document.getElementById('view-note-content');
+        
+        // Buttons
+        const addNoteFab = document.getElementById('add-note-fab');
+        const saveNoteBtn = document.getElementById('save-note-btn');
+        const deleteNoteBtn = document.getElementById('delete-note-btn');
+        const searchIcon = document.getElementById('search-icon');
+        const viewToggleIcon = document.getElementById('view-toggle-icon');
+        const settingsIcon = document.getElementById('settings-icon');
+        const viewBackBtn = document.getElementById('view-back-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const editBtn = document.getElementById('edit-btn');
+        const lockBtn = document.getElementById('lock-btn');
+
+        // Settings Buttons
+        const toggleThemeBtn = document.getElementById('toggle-theme-btn');
+        const sortBtn = document.getElementById('sort-btn');
+        const setPasswordBtn = document.getElementById('set-password-btn');
+        const backupBtn = document.getElementById('backup-btn');
+        const restoreBtn = document.getElementById('restore-btn');
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+
+        // Tutorial Elements
+        const tutorialTooltip = document.getElementById('tutorial-tooltip');
+
+        // --- STATE MANAGEMENT ---
+        let notes = [];
+        let settings = {};
+        let currentNoteId = null;
+        let masterPassword = null;
+        
+        const colorOrder = ['c1', 'c2', 'c3', 'c4', 'c5'];
+
+        // --- LOCALSTORAGE FUNCTIONS ---
+        const loadFromLocalStorage = () => {
+            notes = JSON.parse(localStorage.getItem('pro-notes')) || [];
+            settings = JSON.parse(localStorage.getItem('pro-notes-settings')) || {
+                theme: 'dark',
+                view: 'grid',
+                sortBy: 'date',
+                hasSeenTutorial: false
+            };
+            masterPassword = localStorage.getItem('pro-notes-password');
+        };
+
+        const saveNotesToLocalStorage = () => {
+            localStorage.setItem('pro-notes', JSON.stringify(notes));
+        };
+
+        const saveSettingsToLocalStorage = () => {
+            localStorage.setItem('pro-notes-settings', JSON.stringify(settings));
+        };
+
+        // --- CORE CRUD & RENDER ---
+        const renderNotes = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            let filteredNotes = notes;
+
+            if (searchTerm) {
+                filteredNotes = notes.filter(note => 
+                    !note.locked && (note.title.toLowerCase().includes(searchTerm) || note.content.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Sorting
+            if (settings.sortBy === 'date') {
+                filteredNotes.sort((a, b) => b.id - a.id);
+            } else if (settings.sortBy === 'color') {
+                filteredNotes.sort((a, b) => {
+                    const colorA = colorOrder.indexOf(a.color);
+                    const colorB = colorOrder.indexOf(b.color);
+                    return colorA - colorB;
+                });
+            }
+
+            notesGrid.innerHTML = '';
+            if (filteredNotes.length === 0 && searchTerm === '') {
+                 notesGrid.innerHTML = `<p style="color: var(--text-secondary); grid-column: 1 / -1; text-align: center;">No notes yet. Tap the '+' to create one!</p>`;
+            } else if (filteredNotes.length === 0 && searchTerm !== '') {
+                 notesGrid.innerHTML = `<p style="color: var(--text-secondary); grid-column: 1 / -1; text-align: center;">No notes found for "${searchTerm}".</p>`;
+            }
+
+            filteredNotes.forEach(note => {
+                const noteEl = document.createElement('div');
+                noteEl.classList.add('note-card', `color-${note.color}`);
+                if (notesGrid.classList.contains('list-view')) {
+                    noteEl.classList.add('list-view');
+                }
+                
+                noteEl.dataset.id = note.id;
+                
+                const title = document.createElement('div');
+                title.classList.add('note-title');
+                title.textContent = note.title || 'Untitled';
+
+                const contentPreview = document.createElement('div');
+                contentPreview.classList.add('note-content-preview');
+
+                if (note.locked) {
+                    noteEl.classList.add('locked');
+                    contentPreview.innerHTML = '<i class="fa-solid fa-lock"></i>';
+                } else {
+                    contentPreview.textContent = note.content;
+                }
+
+                noteEl.appendChild(title);
+                noteEl.appendChild(contentPreview);
+                noteEl.addEventListener('click', () => openViewModal(note.id));
+                notesGrid.appendChild(noteEl);
+            });
+        };
+
+        // --- MODAL & UI FUNCTIONS ---
+        const openEditModal = (id = null) => {
+            currentNoteId = id;
+            if (id) {
+                const note = notes.find(n => n.id === id);
+                noteTitleInput.value = note.title;
+                noteContentInput.value = note.content;
+                selectColor(note.color);
+                deleteNoteBtn.style.display = 'block';
+            } else {
+                noteTitleInput.value = '';
+                noteContentInput.value = '';
+                selectColor('c5'); // Default color
+                deleteNoteBtn.style.display = 'none';
+            }
+            editModal.style.display = 'flex';
+            noteTitleInput.focus();
+        };
+
+        const closeEditModal = () => {
+            editModal.style.display = 'none';
+        };
+
+        const openViewModal = (id) => {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+
+            currentNoteId = id;
+
+            const openModal = () => {
+                viewNoteTitle.textContent = note.title || 'Untitled';
+                viewNoteContent.textContent = note.content;
+                updateLockIcon(note.locked);
+                viewModal.style.display = 'flex';
+            };
+
+            if (note.locked) {
+                const password = prompt('Enter master password to view note:');
+                if (password === masterPassword) {
+                    openModal();
+                } else if(password !== null) {
+                    alert('Incorrect password.');
+                }
+            } else {
+                openModal();
+            }
+        };
+        
+        const closeViewModal = () => {
+            viewModal.style.display = 'none';
+            currentNoteId = null;
+        };
+        
+        const selectColor = (color) => {
+            document.querySelectorAll('.color-dot').forEach(dot => {
+                dot.classList.remove('selected');
+                if(dot.dataset.color === color) {
+                    dot.classList.add('selected');
+                }
+            });
+        };
+
+        const getSelectedColor = () => {
+            const selected = document.querySelector('.color-dot.selected');
+            return selected ? selected.dataset.color : 'c5';
+        };
+
+        const updateLockIcon = (isLocked) => {
+            lockBtn.classList.toggle('fa-lock', !isLocked);
+            lockBtn.classList.toggle('fa-unlock', isLocked);
+            lockBtn.style.color = isLocked ? 'var(--color-c1)' : 'var(--text-secondary)';
+        }
+
+        const applySettings = () => {
+            // Theme
+            body.className = settings.theme === 'light' ? 'light-theme' : 'dark-theme';
+            toggleThemeBtn.textContent = settings.theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme';
+            
+            // View
+            notesGrid.className = `${settings.view}-view`;
+            viewToggleIcon.className = `fa-solid ${settings.view === 'grid' ? 'fa-list' : 'fa-grip'}`;
+            
+            // Sort
+            sortBtn.textContent = `Sort by: ${settings.sortBy === 'date' ? 'Date' : 'Color'}`;
+        };
+        
+        // --- FEATURE FUNCTIONS ---
+        const saveNote = () => {
+            const title = noteTitleInput.value.trim();
+            const content = noteContentInput.value.trim();
+            const color = getSelectedColor();
+
+            if (!title && !content) {
+                alert("Cannot save an empty note.");
+                return;
+            }
+
+            if (currentNoteId) { // Editing existing note
+                const noteIndex = notes.findIndex(n => n.id === currentNoteId);
+                notes[noteIndex] = { ...notes[noteIndex], title, content, color };
+            } else { // Creating new note
+                const newNote = {
+                    id: Date.now(),
+                    title,
+                    content,
+                    color,
+                    locked: false
+                };
+                notes.push(newNote);
+            }
+            
+            saveNotesToLocalStorage();
+            renderNotes();
+            closeEditModal();
+        };
+
+        const deleteNote = () => {
+            if (!currentNoteId) return;
+            if (confirm('Are you sure you want to delete this note?')) {
+                notes = notes.filter(n => n.id !== currentNoteId);
+                saveNotesToLocalStorage();
+                renderNotes();
+                closeEditModal();
+                closeViewModal();
+            }
+        };
+
+        const toggleLock = () => {
+            if (!masterPassword) {
+                alert('Please set a master password in the settings first.');
+                return;
+            }
+            
+            const noteIndex = notes.findIndex(n => n.id === currentNoteId);
+            if (noteIndex === -1) return;
+            
+            const note = notes[noteIndex];
+            
+            if (note.locked) { // Unlock
+                 const password = prompt('Enter master password to unlock:');
+                 if (password === masterPassword) {
+                     note.locked = false;
+                     alert('Note unlocked.');
+                 } else if (password !== null) {
+                     alert('Incorrect password.');
+                     return;
+                 } else {
+                     return; // User cancelled prompt
+                 }
+            } else { // Lock
+                note.locked = true;
+                alert('Note locked.');
+            }
+            
+            saveNotesToLocalStorage();
+            updateLockIcon(note.locked);
+            renderNotes(); // Re-render to show lock icon on grid
+        };
+
+        const shareNote = () => {
+            if (!currentNoteId) return;
+            const note = notes.find(n => n.id === currentNoteId);
+            const text = `*${note.title}*\n\n${note.content}`;
+            const encodedText = encodeURIComponent(text);
+            window.open(`https://wa.me/?text=${encodedText}`);
+        };
+
+        const copyNote = () => {
+            if (!currentNoteId) return;
+            const note = notes.find(n => n.id === currentNoteId);
+            const text = `${note.title}\n\n${note.content}`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Note copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy note.');
+            });
+        };
+
+        // --- ONBOARDING TUTORIAL ---
+        const runTutorial = () => {
+            const exampleNote = { id: 0, title: "Example Note", content: "This is how a note looks. Click on it to see more!", color: 'c5', locked: false };
+            notes.push(exampleNote);
+            renderNotes();
+
+            const steps = [
+                { el: '#add-note-fab', text: "Tap this button to create a new note." },
+                { el: '.note-card', text: "Your notes will appear here. Tap a note to view or edit it." },
+                { el: '#search-icon', text: "Use the search icon to find specific notes by title or content." },
+                { el: '#view-toggle-icon', text: "Toggle between grid and list view for your notes." },
+                { el: '#settings-icon', text: "Access settings like theme, sorting, and backup here." }
+            ];
+            let currentStep = 0;
+
+            const showNextStep = () => {
+                if (currentStep > 0) {
+                    const prevEl = document.querySelector(steps[currentStep - 1].el)
+                    if (prevEl) prevEl.classList.remove('tutorial-highlight');
+                }
+                if (currentStep >= steps.length) {
+                    tutorialTooltip.style.display = 'none';
+                    // Cleanup
+                    notes = notes.filter(n => n.id !== 0);
+                    settings.hasSeenTutorial = true;
+                    saveSettingsToLocalStorage();
+                    saveNotesToLocalStorage();
+                    renderNotes();
+                    return;
+                }
+
+                const element = document.querySelector(steps[currentStep].el);
+                if (!element) { // Element might not be visible, skip
+                    currentStep++;
+                    showNextStep();
+                    return;
+                }
+                
+                element.classList.add('tutorial-highlight');
+                
+                tutorialTooltip.textContent = steps[currentStep].text;
+                const rect = element.getBoundingClientRect();
+                tutorialTooltip.style.display = 'block';
+                
+                // Position tooltip
+                if(rect.top < window.innerHeight / 2) { // Element in top half
+                    tutorialTooltip.style.top = `${rect.bottom + 15}px`;
+                    tutorialTooltip.style.bottom = 'auto';
+                } else { // Element in bottom half
+                    tutorialTooltip.style.bottom = `${window.innerHeight - rect.top + 15}px`;
+                    tutorialTooltip.style.top = 'auto';
+                }
+                tutorialTooltip.style.left = `${Math.max(10, rect.left + rect.width / 2 - tutorialTooltip.offsetWidth / 2)}px`;
+
+                currentStep++;
+            };
+            
+            tutorialTooltip.addEventListener('click', showNextStep);
+            showNextStep();
+        };
+
+        // --- EVENT LISTENERS ---
+        addNoteFab.addEventListener('click', () => openEditModal());
+        saveNoteBtn.addEventListener('click', saveNote);
+        deleteNoteBtn.addEventListener('click', deleteNote);
+        
+        // Header icons
+        searchIcon.addEventListener('click', () => {
+            document.getElementById('header-title').style.display = 'none';
+            document.getElementById('search-bar').style.display = 'block';
+            searchInput.focus();
+        });
+        searchInput.addEventListener('blur', () => {
+            // A small delay to allow clicking on search results
+            setTimeout(() => {
+                if(document.activeElement !== searchInput) {
+                    document.getElementById('header-title').style.display = 'block';
+                    document.getElementById('search-bar').style.display = 'none';
+                }
+            }, 200);
+        });
+        searchInput.addEventListener('input', renderNotes);
+
+        viewToggleIcon.addEventListener('click', () => {
+            settings.view = settings.view === 'grid' ? 'list' : 'grid';
+            applySettings();
+            saveSettingsToLocalStorage();
+            renderNotes(); // Re-render to apply list/grid styles to cards
+        });
+
+        settingsIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.style.display = settingsMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu.contains(e.target) && e.target !== settingsIcon) {
+                settingsMenu.style.display = 'none';
+            }
+        });
+
+        // Edit Modal Color Palette
+        colorPalette.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-dot')) {
+                selectColor(e.target.dataset.color);
+            }
+        });
+
+        // View Modal Buttons
+        viewBackBtn.addEventListener('click', closeViewModal);
+        editBtn.addEventListener('click', () => {
+            const idToEdit = currentNoteId;
+            closeViewModal();
+            openEditModal(idToEdit);
+        });
+        lockBtn.addEventListener('click', toggleLock);
+        shareBtn.addEventListener('click', shareNote);
+        copyBtn.addEventListener('click', copyNote);
+
+        // Settings Menu Buttons
+        toggleThemeBtn.addEventListener('click', () => {
+            settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+            applySettings();
+            saveSettingsToLocalStorage();
+        });
+
+        sortBtn.addEventListener('click', () => {
+            settings.sortBy = settings.sortBy === 'date' ? 'color' : 'date';
+            applySettings();
+            saveSettingsToLocalStorage();
+            renderNotes();
+        });
+        
+        setPasswordBtn.addEventListener('click', () => {
+            const newPassword = prompt('Enter a new master password (leave blank to remove):');
+            if (newPassword !== null) {
+                if(newPassword === '') {
+                    localStorage.removeItem('pro-notes-password');
+                    masterPassword = null;
+                    alert('Master password removed.');
+                } else {
+                    localStorage.setItem('pro-notes-password', newPassword);
+                    masterPassword = newPassword;
+                    alert('Master password set.');
+                }
+            }
+        });
+        
+        backupBtn.addEventListener('click', () => {
+            if(notes.length === 0) {
+                alert('No notes to backup.');
+                return;
+            }
+            const timestamp = new Date().toISOString();
+            const backupKey = `pronotes-backup-${timestamp}`;
+            const backupData = JSON.stringify(notes);
+            localStorage.setItem(backupKey, backupData);
+            alert(`Backup created successfully!\nKey: ${backupKey}`);
+        });
+
+        restoreBtn.addEventListener('click', () => {
+            let backupKeys = [];
+            for(let i=0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if(key.startsWith('pronotes-backup-')) {
+                    backupKeys.push(key);
+                }
+            }
+            if (backupKeys.length === 0) {
+                alert('No backups found.');
+                return;
+            }
+            
+            backupKeys.sort().reverse(); // Show newest first
+            const choice = prompt(`Available backups (newest first):\n${backupKeys.join('\n')}\n\nEnter the full key of the backup to restore:`);
+            if (choice && backupKeys.includes(choice)) {
+                if (confirm('Restoring will overwrite your current notes. Are you sure?')) {
+                    const backupData = localStorage.getItem(choice);
+                    notes = JSON.parse(backupData);
+                    saveNotesToLocalStorage();
+                    renderNotes();
+                    alert('Restore successful!');
+                }
+            } else if (choice !== null) {
+                alert('Invalid backup key.');
+            }
+        });
+        
+        deleteAllBtn.addEventListener('click', () => {
+            if (confirm('DANGER! This will delete all your notes permanently. This cannot be undone. Are you absolutely sure?')) {
+                notes = [];
+                saveNotesToLocalStorage();
+                renderNotes();
+                alert('All notes have been deleted.');
+            }
+        });
+
+        // --- INITIALIZATION ---
+        const init = () => {
+            loadFromLocalStorage();
+            applySettings();
+            
+            if (!settings.hasSeenTutorial) {
+                setTimeout(runTutorial, 500);
+            } else {
+                renderNotes();
+            }
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
+<script type="text/javascript">
+	atOptions = {
+		'key' : '7f406969e79a7a4c667eae599f62adb7',
+		'format' : 'iframe',
+		'height' : 50,
+		'width' : 320,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/7f406969e79a7a4c667eae599f62adb7/invoke.js"></script>
